@@ -7,14 +7,14 @@ using StaticArrays
 using Revise
 using BenchmarkTools
 using EvoTrees
-using EvoTrees: get_gain, get_edges, binarize, get_max_gain, update_grads!, grow_tree, grow_gbtree, SplitInfo, SplitTrack, Tree, TrainNode, TreeNode, EvoTreeRegressor, predict, predict!, sigmoid
-using EvoTrees: find_bags, find_split_bitset!, find_split_turbo!, update_bags!
+using EvoTrees: get_gain, get_edges, binarize, get_max_gain, update_grads!, grow_tree, grow_gbtree, SplitInfo, SplitTrack, TreeNode, LeafNode, SplitNode, EvoTreeRegressor
+using EvoTrees: find_bags, find_split_turbo!
 
 # prepare a dataset
 # features = rand(100_000, 100)
-features = rand(100, 10)
-x = cat(ones(20), ones(80)*2, dims=1)
-features =  hcat(x, features)
+features = rand(100_000, 100)
+# x = cat(ones(20), ones(80)*2, dims=1)
+# features =  hcat(x, features)
 
 X = features
 Y = rand(size(X, 1))
@@ -33,10 +33,10 @@ Y_train, Y_eval = Y[𝑖_train], Y[𝑖_eval]
 # set parameters
 params1 = EvoTreeRegressor(
     loss=:linear, metric=:mse,
-    nrounds=10, nbins=20,
-    λ = 0.5, γ=0.1, η=0.01,
-    max_depth = 5, min_weight = 1.0,
-    rowsample=0.5, colsample=1.0)
+    nrounds=10, nbins=32,
+    λ = 0.0, γ=0.0, η=0.1,
+    max_depth = 6, min_weight = 1.0,
+    rowsample=1.0, colsample=1.0)
 
 # initial info
 δ, δ² = zeros(size(X, 1)), zeros(size(X, 1))
@@ -46,13 +46,6 @@ pred = zeros(size(Y, 1))
 update_grads!(params1.loss, params1.α, pred, Y, δ, δ², 𝑤)
 ∑δ, ∑δ², ∑𝑤 = sum(δ), sum(δ²), sum(𝑤)
 gain = get_gain(params1.loss, ∑δ, ∑δ², ∑𝑤, params1.λ)
-
-# initialize train_nodes
-train_nodes = Vector{TrainNode{Float64, BitSet, Array{Int64, 1}, Int}}(undef, 2^params1.max_depth-1)
-for feat in 1:2^params1.max_depth-1
-    train_nodes[feat] = TrainNode(0, -Inf, -Inf, -Inf, -Inf, BitSet([0]), [0])
-    # train_nodes[feat] = TrainNode(0, -Inf, -Inf, -Inf, -Inf, Set([0]), [0], bags)
-end
 
 # initializde node splits info and tracks - colsample size (𝑗)
 splits = Vector{SplitInfo{Float64, Int}}(undef, size(𝑗, 1))
@@ -66,21 +59,20 @@ end
 
 @time edges = get_edges(X, params1.nbins)
 @time X_bin = binarize(X, edges)
-
-function prep2(X, params)
-    edges = get_edges(X, params.nbins)
-    bags = Vector{Vector{BitSet}}(undef, size(𝑗, 1))
+@time bags = Vector{Vector{BitSet}}(undef, size(𝑗, 1))
+function prep(X_bin, bags)
     for feat in 1:size(𝑗, 1)
-        bags[feat] = find_bags(X[:,feat], edges[feat])
+         bags[feat] = find_bags(X_bin[:,feat])
     end
     return bags
 end
 
-@time bags = prep2(X, params1);
+@time prep(X_bin, bags);
 
-@time train_nodes[1] = TrainNode(1, ∑δ, ∑δ², ∑𝑤, gain, BitSet(𝑖), 𝑗)
-@time tree = grow_tree(bags, δ, δ², 𝑤, params1, train_nodes, splits, tracks, edges)
-@btime tree = grow_tree($bags, $δ, $δ², $𝑤, $params1, $train_nodes, $splits, $tracks, $edges)
+@time node = LeafNode(1, ∑δ, ∑δ², ∑𝑤, gain, 0.0)
+@time tree = grow_tree(node, X_bin, bags, edges, δ, δ², 𝑤, splits, tracks, params1, BitSet(𝑖), 𝑗)
+@btime tree = grow_tree($node, $X_bin, $bags, $edges, $δ, $δ², $𝑤, $splits, $tracks, $params1, BitSet($𝑖), $𝑗)
+@time pred_train = predict(tree, X_train)
 
 params1 = Params(:linear, 5, λ, γ, 1.0, 5, min_weight, rowsample, colsample, nbins)
 @btime model = grow_gbtree($X_train, $Y_train, $params1, print_every_n = 1, metric=:mae)

@@ -1,6 +1,6 @@
 module EvoTrees
 
-export grow_tree!, grow_gbtree, grow_gbtree!, Tree, Node, Params, predict, EvoTreeRegressor, EvoTreeRegressorR
+export grow_tree!, grow_gbtree, grow_gbtree!, Params, predict, EvoTreeRegressor, EvoTreeRegressorR
 
 using DataFrames
 using Statistics
@@ -15,8 +15,8 @@ include("struct.jl")
 include("loss.jl")
 include("eval.jl")
 include("predict.jl")
-include("tree_vector.jl")
 include("find_split.jl")
+include("trees.jl")
 #include("MLJ.jl")
 
 end # module

@@ -1,6 +1,5 @@
 # define an abstrat tree node type - concrete types are TreeSplit and TreeLeaf
-abstract type Node{T<:AbstractFloat} end
-
+abstract type TreeNode{T<:AbstractFloat} end
 abstract type ModelType end
 abstract type GradientRegression <: ModelType end
 abstract type L1Regression <: ModelType end
@@ -10,17 +9,6 @@ struct Poisson <: GradientRegression end
 struct Logistic <: GradientRegression end
 struct L1 <: L1Regression end
 struct Quantile <: QuantileRegression end
-
-# compact alternative to ModeLData - not used for now
-# To Do: how to exploit pre-sorting and binning
-struct TrainData{T<:AbstractFloat}
-    X::Matrix{T}
-    X_permsort::Matrix{T}
-    Y::Matrix{T}
-    δ::Vector{T}
-    δ²::Vector{T}
-    𝑤::Vector{T}
-end
 
 mutable struct SplitInfo{T<:AbstractFloat, S<:Int}
     gain::T
@@ -48,18 +36,6 @@ mutable struct SplitTrack{T<:AbstractFloat}
     gainR::T
     gain::T
 end
-
-struct TreeNode{T<:AbstractFloat, S<:Int, B<:Bool}
-    left::S
-    right::S
-    feat::S
-    cond::T
-    pred::T
-    split::B
-end
-
-TreeNode(left::S, right::S, feat::S, cond::T) where {T<:AbstractFloat, S<:Int} = TreeNode{T,S,Bool}(left, right, feat, cond, 0.0, true)
-TreeNode(pred::T) where {T<:AbstractFloat} = TreeNode{T,Int,Bool}(0, 0, 0, 0.0, pred, false)
 
 mutable struct EvoTreeRegressor{T<:AbstractFloat, U<:ModelType, S<:Int} #<: MLJBase.Deterministic
     loss::U
@@ -134,21 +110,48 @@ function EvoTreeRegressorR(
     return model
 end
 
-# single tree is made of a root node that containes nested nodes and leafs
-struct TrainNode{T<:AbstractFloat, I<:BitSet, J<:AbstractArray{Int, 1}, S<:Int}
-    depth::S
+mutable struct LeafNode{T<:AbstractFloat} <: TreeNode{T}
+    depth::Int
     ∑δ::T
     ∑δ²::T
     ∑𝑤::T
     gain::T
-    𝑖::I
-    𝑗::J
+    pred::T
 end
 
-# single tree is made of a root node that containes nested nodes and leafs
-struct Tree{T<:AbstractFloat, S<:Int}
-    nodes::Vector{TreeNode{T,S,Bool}}
+mutable struct SplitNode{T<:AbstractFloat} <: TreeNode{T}
+    left::TreeNode
+    right::TreeNode
+    feat::Int
+    cond::T
 end
+
+# struct TreeNode{T<:AbstractFloat, S<:Int, B<:Bool}
+#     left::S
+#     right::S
+#     feat::S
+#     cond::T
+#     pred::T
+#     split::B
+# end
+# TreeNode(left::S, right::S, feat::S, cond::T) where {T<:AbstractFloat, S<:Int} = TreeNode{T,S,Bool}(left, right, feat, cond, 0.0, true)
+# TreeNode(pred::T) where {T<:AbstractFloat} = TreeNode{T,Int,Bool}(0, 0, 0, 0.0, pred, false)
+
+# single tree is made of a root node that containes nested nodes and leafs
+# struct TrainNode{T<:AbstractFloat, I<:BitSet, J<:AbstractArray{Int, 1}, S<:Int}
+#     depth::S
+#     ∑δ::T
+#     ∑δ²::T
+#     ∑𝑤::T
+#     gain::T
+#     𝑖::I
+#     𝑗::J
+# end
+
+# single tree is made of a root node that containes nested nodes and leafs
+# struct Tree{T<:AbstractFloat, S<:Int}
+#     nodes::Vector{TreeNode{T,S,Bool}}
+# end
 
 # eval metric tracking
 struct Metric
@@ -159,7 +162,7 @@ Metric() = Metric([0], [Inf])
 
 # gradient-boosted tree is formed by a vector of trees
 struct GBTree{T<:AbstractFloat, S<:Int}
-    trees::Vector{Tree{T,S}}
+    trees::Vector{TreeNode}
     params::EvoTreeRegressor
     metric::Metric
 end
