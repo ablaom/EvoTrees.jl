@@ -61,14 +61,13 @@ end
 @time X_bin = binarize(X, edges)
 @time bags = Vector{Vector{BitSet}}(undef, size(𝑗, 1))
 function prep(X_bin, bags)
-    for feat in 1:size(𝑗, 1)
+    @threads for feat in 1:size(𝑗, 1)
          bags[feat] = find_bags(X_bin[:,feat])
     end
     return bags
 end
 
 @time prep(X_bin, bags);
-
 @time node = LeafNode(1, ∑δ, ∑δ², ∑𝑤, gain, 0.0)
 @time tree = grow_tree(node, X_bin, bags, edges, δ, δ², 𝑤, splits, tracks, params1, BitSet(𝑖), 𝑗)
 @btime tree = grow_tree($node, $X_bin, $bags, $edges, $δ, $δ², $𝑤, $splits, $tracks, $params1, BitSet($𝑖), $𝑗)
