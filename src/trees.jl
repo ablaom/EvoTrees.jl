@@ -19,12 +19,13 @@ function grow_tree(node::TreeNode,
         if best.gain > node.gain + params.γ
             node = SplitNode(
             grow_tree(LeafNode(node.depth + 1, best.∑δL, best.∑δ²L, best.∑𝑤L, best.gainL, 0.0), X_bin, bags, edges, δ, δ², 𝑤, splits, tracks, params, intersect(𝑖, union(bags[best.feat][1:best.𝑖]...)), 𝑗),
-            grow_tree(LeafNode(node.depth + 1, best.∑δR, best.∑δ²R, best.∑𝑤R, best.gainR, 0.0), X_bin, bags, edges, δ, δ², 𝑤, splits, tracks, params, intersect!(𝑖, union(bags[best.feat][(best.𝑖+1):end]...)), 𝑗),
+            grow_tree(LeafNode(node.depth + 1, best.∑δR, best.∑δ²R, best.∑𝑤R, best.gainR, 0.0), X_bin, bags, edges, δ, δ², 𝑤, splits, tracks, params, intersect(𝑖, union(bags[best.feat][(best.𝑖+1):end]...)), 𝑗),
             best.feat,
             best.cond)
         end
     end
-    if isa(node, LeafNode) node.pred = - node.∑δ / (node.∑δ² + params.λ) end
+    # if isa(node, LeafNode) node.pred = - node.∑δ / (node.∑δ² + params.λ) end
+    if isa(node, LeafNode) node.pred = pred_leaf(params.loss, node, params, δ²) end
     return node
 end
 
