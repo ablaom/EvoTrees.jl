@@ -161,7 +161,7 @@ end
 Metric() = Metric([0], [Inf])
 
 # gradient-boosted tree is formed by a vector of trees
-struct GBTree{T<:AbstractFloat, S<:Int}
+struct GBTree
     trees::Vector{TreeNode}
     params::EvoTreeRegressor
     metric::Metric

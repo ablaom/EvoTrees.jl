@@ -30,6 +30,7 @@ params1 = EvoTreeRegressor(
     rowsample=1.0, colsample=1.0, nbins=32)
 
 @time model = grow_gbtree(X_train, Y_train, params1, X_eval = X_eval, Y_eval = Y_eval, print_every_n = 2)
+@btime model = grow_gbtree($X_train, $Y_train, $params1, X_eval = $X_eval, Y_eval = $Y_eval)
 @time pred_train = predict(model, X_train)
 mean(abs.(pred_train .- Y_train))
 

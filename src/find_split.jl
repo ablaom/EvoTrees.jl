@@ -84,5 +84,4 @@ function find_split_turbo!(bins::Vector{BitSet}, X_bin, δ::Vector{S}, δ²::Vec
             info.𝑖 = bin
         end
     end
-    return
 end

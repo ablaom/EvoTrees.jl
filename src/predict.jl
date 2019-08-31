@@ -7,7 +7,7 @@ function predict!(pred, tree::TreeNode, X::AbstractMatrix{T}) where T<:Real
         while isa(node, SplitNode)
             feat = node.feat
             cond = node.cond
-            if x[node.feat] < node.cond
+            if x[feat] < cond
                 node = node.left
             else
                 node = node.right
