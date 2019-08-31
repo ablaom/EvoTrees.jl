@@ -110,6 +110,15 @@ function EvoTreeRegressorR(
     return model
 end
 
+mutable struct TrainNode{T<:AbstractFloat} <: TreeNode{T}
+    depth::Int
+    ∑δ::T
+    ∑δ²::T
+    ∑𝑤::T
+    gain::T
+    pred::T
+end
+
 mutable struct LeafNode{T<:AbstractFloat} <: TreeNode{T}
     depth::Int
     ∑δ::T
@@ -119,7 +128,7 @@ mutable struct LeafNode{T<:AbstractFloat} <: TreeNode{T}
     pred::T
 end
 
-mutable struct SplitNode{T<:AbstractFloat} <: TreeNode{T}
+struct SplitNode{T<:AbstractFloat} <: TreeNode{T}
     left::TreeNode
     right::TreeNode
     feat::Int

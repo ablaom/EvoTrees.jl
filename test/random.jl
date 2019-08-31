@@ -4,6 +4,8 @@ using Statistics
 using StatsBase: sample
 using Revise
 using EvoTrees
+using BenchmarkTools
+using EvoTrees: predict!
 
 # prepare a dataset
 features = rand(100_000, 100)
@@ -32,6 +34,7 @@ params1 = EvoTreeRegressor(
 @time model = grow_gbtree(X_train, Y_train, params1, X_eval = X_eval, Y_eval = Y_eval, print_every_n = 2)
 @btime model = grow_gbtree($X_train, $Y_train, $params1, X_eval = $X_eval, Y_eval = $Y_eval)
 @time pred_train = predict(model, X_train)
+@btime pred_train = predict(model, X_train)
 mean(abs.(pred_train .- Y_train))
 
 # train model

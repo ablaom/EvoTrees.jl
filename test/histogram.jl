@@ -7,8 +7,8 @@ using StaticArrays
 using Revise
 using BenchmarkTools
 using EvoTrees
-using EvoTrees: get_gain, get_edges, binarize, get_max_gain, update_grads!, grow_tree, grow_gbtree, SplitInfo, SplitTrack, TreeNode, LeafNode, SplitNode, EvoTreeRegressor
-using EvoTrees: find_bags, find_split_turbo!, Metric, GBTree
+using EvoTrees: get_gain, get_edges, binarize, get_max_gain, update_grads!, grow_tree, grow_gbtree, SplitInfo, SplitTrack, TrainNode, TreeNode, LeafNode, SplitNode, EvoTreeRegressor
+using EvoTrees: find_bags, find_split_turbo!, Metric, GBTree, predict, predict!
 
 # prepare a dataset
 # features = rand(100_000, 100)
@@ -68,12 +68,16 @@ function prep(X_bin, bags)
 end
 
 @time prep(X_bin, bags);
-@time node = LeafNode(1, ∑δ, ∑δ², ∑𝑤, gain, 0.0)
+@time node = TrainNode(1, ∑δ, ∑δ², ∑𝑤, gain, 0.0)
 𝑖 = BitSet(𝑖);
 @time tree = grow_tree(node, X_bin, bags, edges, δ, δ², 𝑤, splits, tracks, params1, 𝑖, 𝑗)
 @btime tree = grow_tree($node, $X_bin, $bags, $edges, $δ, $δ², $𝑤, $splits, $tracks, $params1, $𝑖, $𝑗)
 @time pred_train = predict(tree, X_train)
 @btime pred_train = predict($tree, $X_train)
+pred=zeros(80000)
+@btime predict!($pred, $tree, $X_train)
+predict!(pred, tree, X_train)
+pred5=predict(tree, X_train)
 
 bias = LeafNode(1, ∑δ, ∑δ², ∑𝑤, gain, 0.0)
 gbtree = GBTree([bias], params1, Metric())

@@ -1,23 +1,40 @@
 # prediction from single tree - assign each observation to its final leaf
-function predict!(pred, tree::TreeNode, X::AbstractMatrix{T}) where T<:Real
+# function predict!(pred, tree::TreeNode, X::AbstractMatrix{T}) where T<:Real
+#     @threads for i in 1:size(X, 1)
+#         node = tree
+#         x = view(X, i, :)
+#         # x = X[i, :]
+#         while isa(node, SplitNode)
+#             feat = node.feat
+#             cond = node.cond
+#             if x[feat] < cond
+#                 node = node.left
+#             else
+#                 node = node.right
+#             end
+#         end
+#         pred[i] += node.pred
+#     end
+#     return pred
+# end
+
+# prediction from single tree - assign each observation to its final leaf
+function predict!(pred::Vector{T}, tree::TreeNode, X::AbstractMatrix{T}) where T<:Real
     @threads for i in 1:size(X, 1)
-        node = tree
         x = view(X, i, :)
-        # x = X[i, :]
-        while isa(node, SplitNode)
-            feat = node.feat
-            cond = node.cond
-            if x[feat] < cond
-                node = node.left
-            else
-                node = node.right
-            end
-        end
-        pred[i] += node.pred
+        pred[i] += predict(tree, x)
     end
-    return pred
 end
 
+function predict(tree::TreeNode, x::AbstractVector{T}) where T<:Real
+    if isa(tree, LeafNode)
+        return tree.pred
+    elseif x[tree.feat] < tree.cond
+        predict(tree.left, x)
+    else
+        predict(tree.right, x)
+    end
+end
 # prediction from single tree - assign each observation to its final leaf
 # function predict!(pred, tree::TreeNode, X::AbstractMatrix{T}) where T<:Real
 #     @threads for i in 1:size(X, 1)
@@ -57,19 +74,19 @@ function predict(model::GBTree, X::AbstractArray{T, 2}) where T<:Real
 end
 
 # prediction in Leaf - GradientRegression
-function pred_leaf(loss::S, node::LeafNode, params::EvoTreeRegressor, δ²) where {S<:GradientRegression, T<:AbstractFloat}
+function pred_leaf(loss::S, node::TreeNode, params::EvoTreeRegressor, δ²) where {S<:GradientRegression, T<:AbstractFloat}
     pred = - params.η * node.∑δ / (node.∑δ² + params.λ * node.∑𝑤)
     return pred
 end
 
 # prediction in Leaf - L1Regression
-function pred_leaf(loss::S, node::LeafNode, params::EvoTreeRegressor, δ²) where {S<:L1Regression, T<:AbstractFloat}
+function pred_leaf(loss::S, node::TreeNode, params::EvoTreeRegressor, δ²) where {S<:L1Regression, T<:AbstractFloat}
     pred = params.η * node.∑δ / (node.∑𝑤 * (1+params.λ))
     return pred
 end
 
 # prediction in Leaf - QuantileRegression
-function pred_leaf(loss::S, node::LeafNode, params::EvoTreeRegressor, δ²) where {S<:QuantileRegression, T<:AbstractFloat}
+function pred_leaf(loss::S, node::TreeNode, params::EvoTreeRegressor, δ²) where {S<:QuantileRegression, T<:AbstractFloat}
     pred = params.η * quantile(δ²[collect(node.𝑖)], params.α) / (1 + params.λ)
     return pred
 end

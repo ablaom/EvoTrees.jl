@@ -8,30 +8,12 @@ function grow_tree(node::TreeNode,
     𝑖::I, 𝑗::J) where {R<:Real, T<:AbstractFloat, I<:BitSet, J<:AbstractArray{Int, 1}, S<:Int}
 
     if node.depth < params.max_depth && node.∑𝑤 >= params.min_weight
-        # Search best split for each feature - to be multi-threaded
-
-        # initializde node splits info and tracks - colsample size (𝑗)
-        # splits = Vector{SplitInfo{Float64, Int64}}(undef, length(splits))
+        # reinitialise splits
         @threads for feat in 1:length(splits)
-            # splits[feat].gain = -Inf
-            # splits[feat].∑δL = 0.0
-            # splits[feat].∑δ²L = 0.0
-            # splits[feat].∑𝑤L = 0.0
-            # splits[feat].∑δR = 0.0
-            # splits[feat].∑δ²R = 0.0
-            # splits[feat].∑𝑤R = 0.0
-            # splits[feat].gainL = -Inf
-            # splits[feat].gainR = -Inf
-            # splits[feat].𝑖 = 0
-            # splits[feat].feat = feat
-            # splits[feat].cond = 0.0
             splits[feat] = SplitInfo{Float64, Int64}(-Inf, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -Inf, -Inf, 0, feat, 0.0)
         end
-        # tracks = Vector{SplitTrack{Float64}}(undef, length(tracks))
-        # @threads for feat in 𝑗
-        #     tracks[feat] = SplitTrack{Float64}(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -Inf, -Inf, -Inf)
-        # end
 
+        # Search best split for each feature
         @threads for feat in 𝑗
             find_split_turbo!(bags[feat], view(X_bin,:,feat), δ, δ², 𝑤, node.∑δ::T, node.∑δ²::T, node.∑𝑤::T, params, splits[feat], tracks[feat], edges[feat], 𝑖)
             splits[feat].feat = feat
@@ -47,7 +29,6 @@ function grow_tree(node::TreeNode,
             best.cond)
         end
     end
-    # if isa(node, LeafNode) node.pred = - node.∑δ / (node.∑δ² + params.λ) end
     if isa(node, LeafNode) node.pred = pred_leaf(params.loss, node, params, δ²) end
     return node
 end
