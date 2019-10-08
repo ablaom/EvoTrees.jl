@@ -39,37 +39,31 @@ function update_bags!(bins, set)
 end
 
 
-function find_split_static!(hist_δ::Vector{SVector{L,T}}, hist_δ²::Vector{SVector{L,T}}, hist_𝑤::Vector{SVector{1,T}}, bins::Vector{BitSet}, X_bin, δ::Vector{SVector{L,T}}, δ²::Vector{SVector{L,T}}, 𝑤::Vector{SVector{1,T}}, ∑δ::SVector{L,T}, ∑δ²::SVector{L,T}, ∑𝑤::SVector{1,T}, params::EvoTreeRegressor, info::SplitInfo{L,T,S}, edges, set::BitSet) where {L,T,S}
+function find_split_static!(hist_δ::Vector{SVector{L,T}}, hist_𝑤::Vector{SVector{1,T}}, bins::Vector{BitSet}, X_bin, δ::Vector{SVector{L,T}}, 𝑤::Vector{SVector{1,T}}, ∑δ::SVector{L,T}, ∑𝑤::SVector{1,T}, params::EvoTreeRegressor, info::SplitInfo{L,T,S}, edges, set::BitSet) where {L,T,S}
 
     # initialize histogram
     hist_δ .*= 0.0
-    hist_δ² .*= 0.0
     hist_𝑤 .*= 0.0
 
     # initialize tracking
     ∑δL = ∑δ * 0
-    ∑δ²L = ∑δ² * 0
     ∑𝑤L = ∑𝑤 * 0
     ∑δR = ∑δ
-    ∑δ²R = ∑δ²
     ∑𝑤R = ∑𝑤
 
     # build histogram
     @inbounds for i in set
         hist_δ[X_bin[i]] += δ[i]
-        hist_δ²[X_bin[i]] += δ²[i]
         hist_𝑤[X_bin[i]] += 𝑤[i]
     end
 
     @inbounds for bin in 1:(length(bins)-1)
         ∑δL += hist_δ[bin]
-        ∑δ²L += hist_δ²[bin]
         ∑𝑤L += hist_𝑤[bin]
         ∑δR -= hist_δ[bin]
-        ∑δ²R -= hist_δ²[bin]
         ∑𝑤R -= hist_𝑤[bin]
 
-        gainL, gainR = get_gain(params.loss, ∑δL, ∑δ²L, ∑𝑤L, params.λ), get_gain(params.loss, ∑δR, ∑δ²R, ∑𝑤R, params.λ)
+        gainL, gainR = get_gain(params.loss, ∑δL, ∑𝑤L, params.λ), get_gain(params.loss, ∑δR, ∑𝑤R, params.λ)
         gain = gainL + gainR
 
         if gain > info.gain && ∑𝑤L[1] >= params.min_weight && ∑𝑤R[1] >= params.min_weight
@@ -77,10 +71,8 @@ function find_split_static!(hist_δ::Vector{SVector{L,T}}, hist_δ²::Vector{SVe
             info.gainL = gainL
             info.gainR = gainR
             info.∑δL = ∑δL
-            info.∑δ²L = ∑δ²L
             info.∑𝑤L = ∑𝑤L
             info.∑δR = ∑δR
-            info.∑δ²R = ∑δ²R
             info.∑𝑤R = ∑𝑤R
             info.cond = edges[bin]
             info.𝑖 = bin

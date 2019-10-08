@@ -1,8 +1,7 @@
 # linear
-function update_grads!(loss::Linear, α::T, pred::Vector{SVector{L,T}}, target::AbstractVector{T}, δ::Vector{SVector{L,T}}, δ²::Vector{SVector{L,T}}, 𝑤::Vector{SVector{1,T}}) where {T <: AbstractFloat, L, M}
+function update_grads!(loss::Linear, α::T, pred::Vector{SVector{L,T}}, target::AbstractVector{T}, δ::Vector{SVector{2,T}}, 𝑤::Vector{SVector{1,T}}) where {T <: AbstractFloat, L, M}
     @inbounds for i in eachindex(δ)
-        δ[i] = 2 .* (pred[i] .- target[i]) .* 𝑤[i]
-        δ²[i] = 2 .* 𝑤[i]
+        δ[i] = SVector(2 * (pred[i][1] - target[i]) * 𝑤[i][1], 2 * 𝑤[i][1])
     end
 end
 
@@ -90,8 +89,8 @@ end
 # get the gain metric
 ##############################
 # GradientRegression
-function get_gain(loss::S, ∑δ::SVector{L,T}, ∑δ²::SVector{L,T}, ∑𝑤::SVector{1,T}, λ::T) where {S <: GradientRegression, T <: AbstractFloat, L}
-    gain = sum((∑δ .^ 2 ./ (∑δ² .+ λ .* ∑𝑤)) ./ 2)
+function get_gain(loss::S, ∑δ::SVector{L,T}, ∑𝑤::SVector{1,T}, λ::T) where {S <: GradientRegression, T <: AbstractFloat, L}
+    gain = (∑δ[1] ^ 2 / (∑δ[2] + λ * ∑𝑤[1])) / 2
     return gain
 end
 

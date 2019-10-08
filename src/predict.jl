@@ -47,8 +47,8 @@ end
 
 
 # prediction in Leaf - GradientRegression
-function pred_leaf(loss::S, node::TrainNode{L,T}, params::EvoTreeRegressor, δ²) where {S<:GradientRegression,L,T}
-    - params.η .* node.∑δ ./ (node.∑δ² .+ params.λ .* node.∑𝑤)
+function pred_leaf(loss::S, node::TrainNode{L,T}, params::EvoTreeRegressor, δ) where {S<:GradientRegression,L,T}
+    SVector{1,Float64}(- params.η * node.∑δ[1] / (node.∑δ[2] + params.λ * node.∑𝑤[1]))
 end
 
 # prediction in Leaf - MultiClassRegression

@@ -19,10 +19,8 @@ struct Gaussian <: GaussianRegression end
 mutable struct SplitInfo{L, T<:AbstractFloat, S<:Int}
     gain::T
     ∑δL::SVector{L,T}
-    ∑δ²L::SVector{L,T}
     ∑𝑤L::SVector{1,T}
     ∑δR::SVector{L,T}
-    ∑δ²R::SVector{L,T}
     ∑𝑤R::SVector{1,T}
     gainL::T
     gainR::T
@@ -136,7 +134,6 @@ end
 struct TrainNode{L, T<:AbstractFloat, I<:BitSet, J<:AbstractArray{Int, 1}, S<:Int}
     depth::S
     ∑δ::SVector{L,T}
-    ∑δ²::SVector{L,T}
     ∑𝑤::SVector{1,T}
     gain::T
     𝑖::I
