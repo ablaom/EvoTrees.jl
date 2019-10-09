@@ -8,8 +8,6 @@ end
 # logistic - on linear predictor
 function update_grads!(loss::Logistic, α::T, pred::Vector{SVector{L,T}}, target::AbstractVector{T}, δ::Vector{SVector{L,T}}, δ²::Vector{SVector{L,T}}, 𝑤::Vector{SVector{1,T}}) where {T <: AbstractFloat, L, M}
     @inbounds for i in eachindex(δ)
-        # δ[i] = (sigmoid.(pred[i]) .* (1 .- target[i]) .- (1 .- sigmoid.(pred[i])) .* target[i]) .* 𝑤[i]
-        # δ²[i] = sigmoid.(pred[i]) .* (1 .- sigmoid.(pred[i])) .* 𝑤[i]
         δ[i] = (sigmoid(pred[i][1]) * (1 - target[i]) - (1 - sigmoid(pred[i][1])) * target[i][1]) * 𝑤[i]
         δ²[i] = sigmoid(pred[i][1]) * (1 - sigmoid(pred[i][1])) * 𝑤[i]
     end
@@ -31,13 +29,13 @@ function update_grads!(loss::L1, α::T, pred::Vector{SVector{L,T}}, target::Abst
 end
 
 # Softmax
-function update_grads!(loss::Softmax, α::T, pred::Vector{SVector{L,T}}, target::AbstractVector{Int}, δ::Vector{SVector{L,T}}, δ²::Vector{SVector{L,T}}, 𝑤::Vector{SVector{1,T}}) where {T <: AbstractFloat, L, M}
+function update_grads!(loss::Softmax, α::T, pred::Vector{SVector{K,T}}, target::AbstractVector{Int}, δ::Vector{SVector{L,T}}, 𝑤::Vector{SVector{1,T}}) where {T <: AbstractFloat, K, L, M}
     pred = pred - maximum.(pred)
-    # sums = sum(exp.(pred), dims=2)
     @inbounds for i in 1:size(pred,1)
         sums = sum(exp.(pred[i]))
-        δ[i] = (exp.(pred[i]) ./ sums - (onehot(target[i], 1:L))) * 𝑤[i][1]
-        δ²[i] =  1 / sums * (1 - exp.(pred[i]) ./ sums) * 𝑤[i][1]
+        δ[i] = SVector{L,T}([[(exp(pred[i][k]) / sums - (target[i]==k)) * 𝑤[i][1] for k in 1:K]..., [𝑤[i][1] / sums * (1 - exp(pred[i][k]) / sums) for k in 1:K]...])
+        # δ[i] = (exp.(pred[i]) ./ sums - (onehot(target[i], 1:L))) * 𝑤[i][1]
+        # δ²[i] =  1 / sums * (1 - exp.(pred[i]) ./ sums) * 𝑤[i][1]
     end
 end
 

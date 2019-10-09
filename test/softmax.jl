@@ -6,6 +6,7 @@ using StatsBase: sample, quantile
 using Plots
 using Plots: colormap
 using Base.Threads: @threads
+using StaticArrays
 
 using Revise
 using EvoTrees
@@ -53,10 +54,12 @@ params1 = EvoTreeRegressor(
     K = 3, seed=44)
 
 # initial info
-@time δ, δ² = zeros(SVector{params1.K, Float64}, size(X_train, 1)), zeros(SVector{params1.K, Float64}, size(X_train, 1))
+@time δ = zeros(SVector{2*params1.K, Float64}, size(X_train, 1))
 𝑤 = zeros(SVector{1, Float64}, size(X_train, 1)) .+ 1
 pred = zeros(SVector{params1.K,Float64}, size(X_train,1))
-@time update_grads!(params1.loss, params1.α, pred, Y_train, δ, δ², 𝑤)
+@time update_grads!(params1.loss, params1.α, pred, Y_train, δ, 𝑤)
+# 329.300 μs (8409 allocations: 212.27 KiB)
+@btime update_grads!(params1.loss, params1.α, pred, Y_train, δ, 𝑤)
 ∑δ, ∑δ², ∑𝑤 = sum(δ[𝑖]), sum(δ²[𝑖]), sum(𝑤[𝑖])
 @time gain = get_gain(params1.loss, ∑δ, ∑δ², ∑𝑤, params1.λ)
 
