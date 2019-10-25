@@ -37,7 +37,7 @@ params1 = EvoTreeRegressor(
     loss=:linear, metric=:mae,
     nrounds=1, nbins=32,
     λ = 0.0, γ=0.0, η=0.1,
-    max_depth = 6, min_weight = 1.0,
+    max_depth = 6, min_weight = 1.0, α=0.5,
     rowsample=1.0, colsample=1.0, K=1)
 
 # initial info
@@ -45,6 +45,12 @@ params1 = EvoTreeRegressor(
 𝑤 = zeros(SVector{1, Float64}, size(X_train, 1)) .+ 1
 pred = zeros(SVector{params1.K,Float64}, size(X_train,1))
 @time update_grads!(params1.loss, params1.α, pred, Y_train, δ, 𝑤)
+# linear: 65.300 μs (1 allocation: 16 bytes)
+# logistic: 953.000 μs (1 allocation: 16 bytes)
+# poisson: 401.699 μs (1 allocation: 16 bytes)
+# quantile: 59.300 μs (1 allocation: 16 bytes)
+# gaussian: 278.200 μs (2 allocations: 64 bytes)
+# @btime update_grads!(params1.loss, params1.α, pred, Y_train, δ, 𝑤)
 ∑δ, ∑𝑤 = sum(δ[𝑖]), sum(𝑤[𝑖])
 @time gain = get_gain(params1.loss, ∑δ, ∑𝑤, params1.λ)
 # @btime gain = get_gain($params1.loss, $∑δ, $∑δ², $∑𝑤, $params1.λ)
@@ -87,13 +93,12 @@ end
 #  0.135954 seconds (717.54 k allocations: 15.219 MiB)
 @time train_nodes[1] = TrainNode(1, SVector(∑δ), SVector(∑𝑤), gain, BitSet(𝑖), 𝑗)
 @time tree = grow_tree(bags, δ, 𝑤, hist_δ, hist_𝑤, params1, train_nodes, splits, edges, X_bin)
-# @btime tree = grow_tree($bags, $δ, $δ², $𝑤, $hist_δ, $hist_δ², $hist_𝑤, $params1, $train_nodes, $splits, $tracks, $edges, $X_bin)
 @time pred_train = predict(tree, X_train, params1.K)
-# 705.901 μs (18 allocations: 626.08 KiB)
+# 965.899 μs (18 allocations: 626.08 KiB)
 @btime pred_train = predict($tree, $X_train, $params1.K)
 @time pred_leaf_ = pred_leaf(params1.loss, train_nodes[1], params1, δ)
 # 1.899 ns (0 allocations: 0 bytes)
-@btime pred_leaf_ = pred_leaf($params1.loss, $train_nodes[1], $params1, $δ²)
+@btime pred_leaf_ = pred_leaf($params1.loss, $train_nodes[1], $params1, $δ)
 # @btime pred_train = predict($tree, $X_train, params1.K)
 
 @time model = grow_gbtree(X_train, Y_train, params1, print_every_n = 1)

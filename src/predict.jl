@@ -52,22 +52,22 @@ function pred_leaf(loss::S, node::TrainNode{L,T}, params::EvoTreeRegressor, δ) 
 end
 
 # prediction in Leaf - MultiClassRegression
-function pred_leaf(loss::S, node::TrainNode{L,T}, params::EvoTreeRegressor, δ²) where {S<:MultiClassRegression,L,T}
+function pred_leaf(loss::S, node::TrainNode{L,T}, params::EvoTreeRegressor, δ) where {S<:MultiClassRegression,L,T}
     - params.η * node.∑δ ./ (node.∑δ² + params.λ * node.∑𝑤[1])
 end
 
 # prediction in Leaf - L1Regression
-function pred_leaf(loss::S, node::TrainNode{L,T}, params::EvoTreeRegressor, δ²) where {S<:L1Regression,L,T}
+function pred_leaf(loss::S, node::TrainNode{L,T}, params::EvoTreeRegressor, δ) where {S<:L1Regression,L,T}
     params.η .* node.∑δ ./ (node.∑𝑤 .* (1 .+ params.λ))
 end
 
 # prediction in Leaf - QuantileRegression
-function pred_leaf(loss::S, node::TrainNode{L,T}, params::EvoTreeRegressor, δ²) where {S<:QuantileRegression,L,T}
-    SVector{1,Float64}(params.η * quantile(reinterpret(Float64, δ²[collect(node.𝑖)]), params.α) / (1 + params.λ))
+function pred_leaf(loss::S, node::TrainNode{L,T}, params::EvoTreeRegressor, δ) where {S<:QuantileRegression,L,T}
+    SVector{1,Float64}(params.η * quantile(reinterpret(Float64, δ[collect(node.𝑖)]), params.α) / (1 + params.λ))
     # pred = params.η * quantile(δ²[collect(node.𝑖)], params.α) / (1 + params.λ)
 end
 
 # prediction in Leaf - GaussianRegression
-function pred_leaf(loss::S, node::TrainNode{L,T}, params::EvoTreeRegressor, δ²) where {S<:GaussianRegression,L,T}
+function pred_leaf(loss::S, node::TrainNode{L,T}, params::EvoTreeRegressor, δ) where {S<:GaussianRegression,L,T}
     - params.η * node.∑δ ./ (node.∑δ² + params.λ * node.∑𝑤[1])
 end

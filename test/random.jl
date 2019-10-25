@@ -24,16 +24,20 @@ Y_train, Y_eval = Y[𝑖_train], Y[𝑖_eval]
 
 # train model
 params1 = EvoTreeRegressor(
-    loss=:linear, metric=:mae,
+    loss=:logistic, metric=:logloss,
     nrounds=10,
     λ = 0.0, γ=0.0, η=0.1,
     max_depth = 6, min_weight = 1.0,
     rowsample=1.0, colsample=1.0, nbins=32)
 
-# 1.323 s (685585 allocations: 467.74 MiB)
+# linear: 1.202 s (648779 allocations: 466.69 MiB)
+# logistic: 1.234 s (649778 allocations: 468.40 MiB)
 @time model = grow_gbtree(X_train, Y_train, params1, X_eval = X_eval, Y_eval = Y_eval, print_every_n = 2)
 @btime model = grow_gbtree($X_train, $Y_train, $params1, X_eval = $X_eval, Y_eval = $Y_eval)
 @time pred_train = predict(model, X_train)
+# linear: 7.597 ms (29 allocations: 626.58 KiB)
+# logistic: 9.653 ms (32 allocations: 626.64 KiB)
+@btime pred_train = predict(model, X_train)
 mean(abs.(pred_train .- Y_train))
 
 # train model
