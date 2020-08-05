@@ -43,12 +43,12 @@ end
 @btime update_set_1($𝑖, 128, $X_bin[:,1]);
 @btime update_set_1($𝑖, 240, $X_bin[:,1]);
 
-# add a leaf id update - to indicate to which leaf the set is associated
-function update_set_2!(leaf_vec::Vector{T}, set, best_feat, best_cond, x_bin, depth::T) where {T}
+# update vector indicating to which leaf each observation belongs
+function update_leaf_idx!(leaf_idx::Vector{T}, set, best_feat, best_cond, x_bin, depth::T) where {T}
     @inbounds for i in set
-        left_id = leaf_vec[i] + 2^depth
+        left_id = leaf_idx[i] + 2^depth
         right_id = left_id + 1
-        x_bin[i, best_feat[leaf_vec[i]]] <= best_cond[leaf_vec[i]] ? leaf_vec[i] = left_id : leaf_vec[i] = right_id
+        x_bin[i, best_feat[leaf_idx[i]]] <= best_cond[leaf_vec[i]] ? leaf_idx[i] = left_id : leaf_idx[i] = right_id
     end
 end
 

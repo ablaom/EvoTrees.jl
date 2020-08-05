@@ -5,20 +5,20 @@ using EvoTrees
 using BenchmarkTools
 
 # prepare a dataset
-features = rand(Int(1.25e5), 100)
+features = rand(Int(1.25e5), 100);
 # features = rand(100, 10)
-X = features
-Y = rand(size(X, 1))
-𝑖 = collect(1:size(X,1))
+X = features;
+Y = rand(size(X, 1));
+𝑖 = collect(1:size(X,1));
 
 # train-eval split
-𝑖_sample = sample(𝑖, size(𝑖, 1), replace = false)
+𝑖_sample = sample(𝑖, size(𝑖, 1), replace = false);
 train_size = 0.8
-𝑖_train = 𝑖_sample[1:floor(Int, train_size * size(𝑖, 1))]
-𝑖_eval = 𝑖_sample[floor(Int, train_size * size(𝑖, 1))+1:end]
+𝑖_train = 𝑖_sample[1:floor(Int, train_size * size(𝑖, 1))];
+𝑖_eval = 𝑖_sample[floor(Int, train_size * size(𝑖, 1))+1:end];
 
-X_train, X_eval = X[𝑖_train, :], X[𝑖_eval, :]
-Y_train, Y_eval = Y[𝑖_train], Y[𝑖_eval]
+X_train, X_eval = X[𝑖_train, :], X[𝑖_eval, :];
+Y_train, Y_eval = Y[𝑖_train], Y[𝑖_eval];
 
 # train model
 params1 = EvoTreeRegressor(

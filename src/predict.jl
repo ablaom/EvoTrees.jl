@@ -1,5 +1,5 @@
 # prediction from single tree - assign each observation to its final leaf
-function predict!(pred, tree::Tree{L,T,S}, X::AbstractMatrix) where {L,T,S}
+function predict!(pred, tree::Tree{T,S}, X::AbstractMatrix) where {L,T,S}
     @inbounds @threads for i in 1:size(X,1)
         id = 1
         x = view(X, i, :)
@@ -15,14 +15,14 @@ function predict!(pred, tree::Tree{L,T,S}, X::AbstractMatrix) where {L,T,S}
 end
 
 # prediction from single tree - assign each observation to its final leaf
-function predict(tree::Tree{L,T,S}, X::AbstractMatrix, K) where {L,T,S}
+function predict(tree::Tree{T,S}, X::AbstractMatrix, K) where {T,S}
     pred = zeros(SVector{K,T}, size(X, 1))
     predict!(pred, tree, X)
     return pred
 end
 
 # prediction from single tree - assign each observation to its final leaf
-function predict(model::GBTree{L,T,S}, X::AbstractMatrix) where {L,T,S}
+function predict(model::GBTree{T,S}, X::AbstractMatrix) where {T,S}
     pred = zeros(SVector{model.K,T}, size(X, 1))
     for tree in model.trees
         predict!(pred, tree, X)
@@ -44,29 +44,28 @@ function predict(model::GBTree{L,T,S}, X::AbstractMatrix) where {L,T,S}
     return pred
 end
 
-
 # prediction in Leaf - GradientRegression
-function pred_leaf(loss::S, node::TrainNode{L,T}, params::EvoTypes, δ²) where {S<:GradientRegression,L,T}
+function pred_leaf(loss::S, node::TrainNode{T}, params::EvoTypes, δ²) where {S<:GradientRegression,T}
     - params.η .* node.∑δ ./ (node.∑δ² .+ params.λ .* node.∑𝑤)
 end
 
 # prediction in Leaf - MultiClassRegression
-function pred_leaf(loss::S, node::TrainNode{L,T}, params::EvoTypes, δ²) where {S<:MultiClassRegression,L,T}
+function pred_leaf(loss::S, node::TrainNode{T}, params::EvoTypes, δ²) where {S<:MultiClassRegression,T}
     SVector{L,T}(-params.η .* node.∑δ ./ (node.∑δ² .+ params.λ .* node.∑𝑤[1]))
 end
 
 # prediction in Leaf - L1Regression
-function pred_leaf(loss::S, node::TrainNode{L,T}, params::EvoTypes, δ²) where {S<:L1Regression,L,T}
+function pred_leaf(loss::S, node::TrainNode{T}, params::EvoTypes, δ²) where {S<:L1Regression,T}
     params.η .* node.∑δ ./ (node.∑𝑤 .* (1 .+ params.λ))
 end
 
 # prediction in Leaf - QuantileRegression
-function pred_leaf(loss::S, node::TrainNode{L,T}, params::EvoTypes, δ²) where {S<:QuantileRegression,L,T}
+function pred_leaf(loss::S, node::TrainNode{T}, params::EvoTypes, δ²) where {S<:QuantileRegression,T}
     SVector{1,T}(params.η * quantile(reinterpret(Float32, δ²[node.𝑖]), params.α) / (1 + params.λ))
     # pred = params.η * quantile(δ²[collect(node.𝑖)], params.α) / (1 + params.λ)
 end
 
 # prediction in Leaf - GaussianRegression
-function pred_leaf(loss::S, node::TrainNode{L,T}, params::EvoTypes, δ²) where {S<:GaussianRegression,L,T}
+function pred_leaf(loss::S, node::TrainNode{T}, params::EvoTypes, δ²) where {S<:GaussianRegression,T}
     - params.η * node.∑δ ./ (node.∑δ² .+ params.λ .* node.∑𝑤[1])
 end
