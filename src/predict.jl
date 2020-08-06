@@ -45,6 +45,10 @@ function predict(model::GBTree{T,S}, X::AbstractMatrix) where {T,S}
 end
 
 # prediction in Leaf - GradientRegression
+function pred_leaf(loss::S, ∑, params::EvoTypes, δ) where {S<:GradientRegression,T}
+    - params.η * ∑[1] / (∑[2] + params.λ * ∑[2])
+end
+# prediction in Leaf - GradientRegression
 function pred_leaf(loss::S, node::TrainNode{T}, params::EvoTypes, δ²) where {S<:GradientRegression,T}
     - params.η .* node.∑δ ./ (node.∑δ² .+ params.λ .* node.∑𝑤)
 end

@@ -6,12 +6,15 @@ mutable struct SplitInfo{T<:AbstractFloat, S<:Int}
     ∑R::Matrix{T}
     gainL::T
     gainR::T
-    𝑖::S
+    bin::UInt8
     feat::S
     cond::T
 end
 
-# single tree is made of a root node that containes nested nodes and leafs
+function SplitInfo(T, J, K)
+    SplitInfo{T,Int}(T(-Inf), zeros(T, 2 * K + 1), zeros(T, 2 * K + 1, J), zeros(T, 2 * K + 1, J), T(-Inf), T(-Inf), 0, 1, 0.0)
+end
+
 struct TrainNode{T<:AbstractFloat, S<:Int}
     parent::S
     depth::S

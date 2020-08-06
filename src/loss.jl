@@ -21,6 +21,13 @@ function update_grads!(loss::Linear, α::T, pred::Vector{SVector{L,T}}, target::
         δ²[i] = SVector(2 * 𝑤[i][1])
     end
 end
+# linear
+function update_grads!(loss::Linear, α::T, pred::AbstractVecOrMat{T}, target::AbstractVector{T}, δ::AbstractMatrix{T}) where {T <: AbstractFloat}
+    @inbounds for i in 1:size(pred,1)
+        δ[i,1] = 2 * (pred[i] - target[i]) * δ[i,3]
+        δ[i,2] = 2 * δ[i,3]
+    end
+end
 
 # logistic - on linear predictor
 function update_grads!(loss::Logistic, α::T, pred::Vector{SVector{L,T}}, target::AbstractVector{T}, δ::Vector{SVector{L,T}}, δ²::Vector{SVector{L,T}}, 𝑤::Vector{SVector{1,T}}) where {T <: AbstractFloat,L}

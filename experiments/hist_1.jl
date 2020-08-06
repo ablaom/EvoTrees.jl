@@ -6,8 +6,8 @@ using BenchmarkTools
 using Revise
 using EvoTrees
 
-n_obs = Int(5e5)
-n_vars = 50
+n_obs = Int(1e6)
+n_vars = 100
 n_bins = 32
 𝑖 = collect(1:n_obs);
 𝑗 = collect(1:n_vars);
@@ -18,6 +18,8 @@ hist_δ = zeros(n_bins, n_vars);
 hist_δ² = zeros(n_bins, n_vars);
 X_bin = rand(UInt8.(1:n_bins), n_obs, n_vars);
 𝑖_4 = sample(𝑖, Int(n_obs / 4), ordered=true);
+𝑖_2 = sample(𝑖, Int(n_obs / 2), ordered=true);
+𝑗_2 = sample(𝑗, Int(n_vars / 2), ordered=true);
 
 function iter_1(X_bin, hist_δ, δ, 𝑖, 𝑗)
     # hist_δ .*= 0.0
@@ -94,24 +96,65 @@ end
 
 
 # integrate a leaf id
-δ2 = rand(n_obs, 2);
-hist = zeros(n_bins, 2, n_vars, 15);
+K = 1
+δ2 = rand(n_obs, 3);
+hist = zeros(n_bins, 3, n_vars, 15);
+leaf_idx = ones(UInt16, n_obs);
+leaf_idx = sample(UInt16.(8:15), n_obs);
+𝑖b = BitSet(𝑖);
 @time hist .= 0;
-function iter_3(X_bin, hist, δ, 𝑖, 𝑗, leaf)
+function iter_3(X_bin, hist, δ, 𝑖, 𝑗, K, leaf)
     @inbounds @threads for j in 𝑗
         @inbounds for i in 𝑖
-            # hist[X_bin[i,j], 1, j, 1] += δ[i, 1]
-            # hist[X_bin[i,j], 2, j, 1] += δ[i, 2]
-            @inbounds for k in 1:2
+            @inbounds for k in 1:2*K+1
                 hist[X_bin[i,j], k, j, leaf[i]] += δ[i, k]
             end
         end
     end
 end
 
-leaf_idx = ones(UInt16, n_obs);
-leaf_idx = sample(UInt16.(8:15), n_obs);
-@btime 𝑖b = BitSet($𝑖);
-@time iter_3(X_bin, hist, δ2, 𝑖, 𝑗, leaf_idx);
-@btime iter_3($X_bin, $hist, $δ2, $𝑖, $𝑗, leaf_idx);
-@btime iter_3($X_bin, $hist, $δ2, $𝑖b, $𝑗, $2);
+function iter_3A(X_bin, hist, δ, 𝑖, 𝑗, K, leaf)
+    @inbounds @threads for j in 𝑗
+         @inbounds for i in 𝑖
+             @inbounds for k in 1:3
+                hist[X_bin[i,j], k, j, 1] += δ[i, k]
+            end
+        end
+    end
+end
+
+function iter_3B(X_bin, hist, δ, 𝑖, 𝑗, K, leaf)
+    @inbounds @threads for j in 𝑗
+        @inbounds for i in 𝑖
+            @views hist[X_bin[i,j], :, j, leaf[i]] .+= δ[i, :]
+        end
+    end
+end
+
+
+function update_𝑖(𝑖, leaf)
+    𝑖_new = similar(𝑖)
+    count = 0
+    @inbounds for i in 𝑖
+        if mod(leaf[i], 2) == 1
+            count += 1
+            𝑖_new[count] = i
+        end
+    end
+    resize!(𝑖_new, count)
+    return 𝑖_new
+end
+
+𝑖_ =  update_𝑖(𝑖, leaf_idx);
+@time update_𝑖(𝑖, leaf_idx);
+@btime update_𝑖($𝑖, $leaf_idx);
+
+@time iter_3(X_bin, hist, δ2, 𝑖, 𝑗, $K, $leaf_idx);
+@time iter_3(X_bin, hist, δ2, 𝑖_4, 𝑗, $K, $leaf_idx);
+@btime iter_3($X_bin, $hist, $δ2, $𝑖, $𝑗, $K, $leaf_idx);
+@btime iter_3($X_bin, $hist, $δ2, $𝑖_2, $𝑗, $K, $leaf_idx);
+@btime iter_3($X_bin, $hist, $δ2, $𝑖, $𝑗_2, $K, $leaf_idx);
+
+@btime iter_3($X_bin, $hist, $δ2, $𝑖_2, $𝑗_2, $K, $leaf_idx);
+@btime iter_3A($X_bin, $hist, $δ2, $𝑖_2, $𝑗_2, $K, $leaf_idx);
+@btime iter_3B($X_bin, $hist, $δ2, $𝑖_2, $𝑗_2, $K, $leaf_idx);

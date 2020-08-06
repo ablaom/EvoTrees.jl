@@ -5,7 +5,7 @@ using EvoTrees
 using BenchmarkTools
 
 # prepare a dataset
-features = rand(Int(1.25e5), 100);
+features = rand(Int(1.25e6), 100);
 # features = rand(100, 10)
 X = features;
 Y = rand(size(X, 1));
@@ -44,7 +44,7 @@ using XGBoost
 num_round = 100
 param = ["max_depth" => 5,
          "eta" => 0.05,
-         "objective" => "reg:linear",
+         "objective" => "reg:squarederror",
          "print_every_n" => 5,
          "subsample" => 0.5,
          "colsample_bytree" => 0.5,
